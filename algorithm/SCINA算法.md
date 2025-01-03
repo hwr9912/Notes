@@ -1,4 +1,5 @@
 # SCINA（**Semi-supervised Category Identification and Assignment**）算法
+
 ## 标记定义
 
 正态化和对数转换后的表达矩阵$E_{i,j}$，其中$i(i=1..I)$为基因代号；$j(j=1..J)$为细胞代号
@@ -90,20 +91,65 @@ $$
 Q(\Theta|\Theta^t)=\sum\limits_{j=1}^J\{P^t(z_j=0|E;\Theta^t)[\log\tau_0+\sum\limits_{r=1}^R\log f(\overrightarrow{e_{S_r,j}};\overrightarrow{\mu_{r,2}}, \Sigma_{2}^{r})]\\+\sum\limits_{s=1}^RP^t(z_j=s|E;\Theta^t)[\log\tau_s+\log f(\overrightarrow{e_{S_r,j}};\overrightarrow{\mu_{r,1}},\Sigma_1^r)+\sum\limits_{r=1..R,r\neq s}\log f(\overrightarrow{e_{S_r,j}};\overrightarrow{\mu_{r,2}},\Sigma_2^r)]\}
 $$
 
-**note：**条件概率$P(A|B)=\frac{P(A\cap B)}{P(B)}$
+**note：**
+
+1. 条件概率$P(A|B)=\frac{P(A\cap B)}{P(B)}$
+
+2. 贝叶斯公式：设实验$E$的样本空间为$S$，$A$为$E$的事件，$B_1,B_2,..B_n$为$S$的一个**划分**（即对于每次实验$E$，这些事件中必然有且只有一个事件会发生），且$P(A)>0,P(B_i)>0\,(i=1,2,...,n)$，则有
+   $$
+   P(B_i|A)=\frac{P(A|B_i)P(B_i)}{\sum\limits_{j=1}^{n}{P(A|B_j)P(B_j)}},\,i=1,2,..,n.
+   $$
 
 因为对于每一细胞类型$s$均与其他类型
 $$
+\begin{align}
+(\overrightarrow{\mu_{s,1}^{t+1}},\overrightarrow{\mu_{s,2}^{t+1}},\Sigma_1^{s,t+1},\Sigma_2^{s,t+1})\\
+=\underset{\overrightarrow{\mu_{s,1}},\overrightarrow{\mu_{s,2}},\Sigma_1^{s},\Sigma_2^{s}}{\mathrm{argmax}} \sum\limits_{j=1}^J\{
+% 细胞类型s
+&P^t(z_j=s|E;\Theta^t)\log{f(\overrightarrow{e_{S_s,j}};\overrightarrow{\mu_{s,1}},\Sigma_1^s})+\\
+% 细胞类型非s
+&\sum\limits_{r=0,r\neq s}^{R}{P^t(z_j=r|E;\Theta^t)\log{f(\overrightarrow{e_{S_s,j}};\overrightarrow{\mu_{s,2}},\Sigma_2^s})}
+\}\\
+=\underset{\overrightarrow{\mu_{s,1}},\overrightarrow{\mu_{s,2}},\Sigma_1^{s},\Sigma_2^{s}}{\mathrm{argmax}} \sum\limits_{j=1}^J\{
+% 细胞类型s
+&P^t(z_j=s|E;\Theta^t)[-\frac{1}{2}\log{|\Sigma^s_1|}-\frac{1}{2}(\overrightarrow{e_{S_s,j}}-\overrightarrow{\mu_{s,1}})^T\Sigma^{s,-1}_1(\overrightarrow{e_{S_s,j}}-\overrightarrow{\mu_{s,1}})]\\
+% 细胞类型非s
+&\sum\limits_{r=0,r\neq s}^{R}{P^t(z_j=r|E;\Theta^t)[-\frac{1}{2}\log{|\Sigma^s_2|}-\frac{1}{2}(\overrightarrow{e_{S_s,j}}-\overrightarrow{\mu_{s,2}})^T\Sigma^{s,-1}_2(\overrightarrow{e_{S_s,j}}-\overrightarrow{\mu_{s,2}})]}
+\}
+\end{align}
+$$
+
+对参数进行更新后有
+$$
 \begin{flalign}
-&\ (\overrightarrow{\mu_{s,1}^{t+1}},\overrightarrow{\mu_{s,2}^{t+1}},\Sigma_1^{s,t+1},\Sigma_2^{s,t+1})\\
-&=\underset{\overrightarrow{\mu_{s,1}},\overrightarrow{\mu_{s,2}},\Sigma_1^{s},\Sigma_2^{s}}{\mathrm{argmax}} \sum\limits_{j=1}^J{P^t(z_j=s|E;\Theta^t)\log{f(\overrightarrow{e_{S_s,j}};\overrightarrow{\mu_{s,1}},\Sigma_1^s})}+\sum\limits_{r=0,r\neq s}^{R}{P^t(z_j=r|E;\Theta^t)\log{f(\overrightarrow{e_{S_s,j}};\overrightarrow{\mu_{s,2}},\Sigma_2^s})}
+&\overrightarrow{\mu^{t+1}_{s,1}}=\frac{\sum\limits_{j=1}^{J}{P^t(z_j=s|E;\Theta^t)\overrightarrow{e_{S_s,j}}}}{\sum\limits_{j=1}^{J}{P^t(z_j=s|E;\Theta^t)}}\\
+&\overrightarrow{\mu^{t+1}_{s,2}}=\frac{\sum\limits_{j=1}^{J}{\sum\limits_{r=0,r\neq s}^{R}{P^t(z_j=s|E;\Theta^t)\overrightarrow{e_{S_s,j}}}}}{\sum\limits_{j=1}^{J}{\sum\limits_{r=0,r\neq s}^{R}{P^t(z_j=s|E;\Theta^t)}}}
+=\frac{\sum\limits_{j=1}^{J}{[1-P^t(z_j=s|E;\Theta^t)]\overrightarrow{e_{S_s,j}}}}{\sum\limits_{j=1}^{J}{[1-P^t(z_j=s|E;\Theta^t)]}}
 \end{flalign}
+$$
+用这种方法计算后，如果基因集$S_r$中的任何基因$i$满足$\mu^{t+1}_{s,1}(i)<\mu^{t+1}_{s,2}(i)$，那么令
+$$
+\mu^{t+1}_{s,1}=\mu^{t+1}_{s,2}=\frac{\sum\limits_{j=1}^{J}{e_{i,j}}}{J}
+$$
+更新协方差矩阵
+$$
+D^{t+1}_{s,1}=diag((\overrightarrow{e_{S_s,j}}-\overrightarrow{\mu_{S_s,1}^{t+1}})\odot(\overrightarrow{e_{S_s,j}}-\overrightarrow{\mu_{S_s,1}^{t+1}}))\\
+D^{t+1}_{s,2}=diag((\overrightarrow{e_{S_s,j}}-\overrightarrow{\mu_{S_s,2}^{t+1}})\odot(\overrightarrow{e_{S_s,j}}-\overrightarrow{\mu_{S_s,2}^{t+1}}))\\
+\Sigma^{t+1}_{s,1}=\Sigma^{t+1}_{s,2}=\frac{\sum\limits_{j=1}^{J}{[1-P^t(z_j=s|E;\Theta^t)]D^{t+1}_{s,2}+P^t(z_j=s|E;\Theta^t)D^{t+1}_{s,1}}}{J}
 $$
 
 
 ### 参数初始化
 
+$\tau^0_r=\frac{1}{R+1},r=0..R$
+
+$\overrightarrow{\mu^0_{r,1}}, \overrightarrow{\mu^0_{r,2}}, r=1...R$ 根据经验分布的分位数赋值
+
+$\Sigma^{r,0},r=1..R$是一个对角矩阵的对角元素对应于每个基因的方差乘以一个常数
+
 ### 终止条件
+
+指定的细胞类型标签的稳定
 
 ## 标记基因重叠的情况
 
