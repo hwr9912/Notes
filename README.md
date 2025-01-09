@@ -6,6 +6,10 @@
 
 1. SCINA算法.md
 
+## R
+
+1. 热图.md
+
 ## statistics
 
 1. 关于正态分布的推导.md
